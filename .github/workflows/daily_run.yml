@@ -1,0 +1,36 @@
+name: Daily ETF Holdings Tracker
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # 6 AM UTC daily
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  track-holdings:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        
+      - name: Run script
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          uv run main.py
+          
+      - name: Commit state.json if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          if [[ -n $(git status -s state.json) ]]; then
+            git add state.json
+            git commit -m "chore: update ETF holdings state"
+            git push
+          else
+            echo "No changes to state.json."
+          fi
