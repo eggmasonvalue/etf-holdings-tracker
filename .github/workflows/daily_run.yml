@@ -8,6 +8,8 @@ on:
 jobs:
   track-holdings:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout repository
@@ -34,3 +36,4 @@ jobs:
           else
             echo "No changes to state.json."
           fi
+
