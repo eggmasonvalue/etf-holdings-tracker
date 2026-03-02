@@ -2,11 +2,30 @@ import os
 import csv
 import json
 import requests
+import re
 from datetime import datetime
 
 CSV_URL = "https://amplifyetfs.com/wp-content/uploads/feeds/AmplifyWeb.40XL.XL_SWAP_Holdings.csv"
 STATE_FILE = "state.json"
 WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
+
+def get_csv_url():
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    try:
+        response = requests.get("https://amplifyetfs.com/cnbs/", headers=headers, timeout=10)
+        response.raise_for_status()
+        match = re.search(r'url:\s*["\']([^"\']*Holdings\.csv)["\']', response.text, re.IGNORECASE)
+        if match:
+            url = match.group(1)
+            if url.startswith('/'):
+                return "https://amplifyetfs.com" + url
+            return url
+    except Exception as e:
+        print(f"Failed to fetch dynamic CSV URL: {e}")
+
+    return CSV_URL
 
 TARGET_TICKERS = {
     "MAPS": "WM Technology Inc",
@@ -15,10 +34,12 @@ TARGET_TICKERS = {
 
 def fetch_csv():
     headers = {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/csv"
     }
-    response = requests.get(CSV_URL, headers=headers)
+    url = get_csv_url()
+    print(f"Using CSV URL: {url}")
+    response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.text.splitlines()
 
